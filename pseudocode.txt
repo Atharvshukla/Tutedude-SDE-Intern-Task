@@ -131,3 +131,103 @@ Progress
 - totalWatchedSeconds: number
 - progressPercentage: number
 - lastUpdated: timestamp
+
+Landing Page:-
+HomePage
+1. Initialize Supabase client
+2. Check user session on component mount
+   a. If session exists, redirect to dashboard
+   b. Set loading state to false
+3. Render:
+   a. Loading indicator if still loading
+   b. Main content:
+      i. Title: "Smart Video Learning Platform"
+      ii. Description: "Track your learning progress intelligently..."
+      iii. Buttons:
+         - "Get Started" (link to login)
+         - "Browse Courses" (link to courses)
+      iv. Features:
+         - Smart Progress: "Only unique views count towards progress"
+         - Resume Anywhere: "Continue where you left off"
+         - Detailed Analytics: "Track your learning journey"
+
+         Dashboard:-
+         DashboardPage
+1. Initialize state variables:
+   a. courses: list of user's courses
+   b. searchQuery: current search input
+   c. searchResults: results from YouTube search
+   d. isLoading, isSearching, isAdding: loading states
+2. Load courses on component mount
+3. Define functions:
+   a. loadCourses: fetch user's courses from API
+   b. handleSearch: search YouTube playlists based on searchQuery
+   c. handleAddCourse: add selected playlist to user's library
+   d. navigateToVideoLibrary: redirect to video library page
+4. Render:
+   a. Loading indicator if courses are loading
+   b. Dashboard content:
+      i. Title: "Your Learning Dashboard"
+      ii. Buttons:
+         - "JavaScript Video Library" (navigate to video library)
+         - SignOutButton
+      iii. Search input and button
+      iv. Search results (if any)
+      v. User's courses (if any)
+
+      YouTube api :-
+
+      YouTubeAPIRoute
+1. GET request:
+   a. Extract query parameter from request URL
+   b. If query is missing, return error
+   c. Search YouTube playlists using Google API
+   d. Return search results or error
+
+2. POST request:
+   a. Extract playlistId from request body
+   b. If playlistId is missing, return error
+   c. Authenticate user using Supabase
+   d. Fetch playlist details from YouTube
+   e. If playlist not found, return error
+   f. Fetch videos from playlist
+   g. Create course in Supabase database
+   h. Add videos to the course in database
+   i. Return success response with course and videos
+
+   course:-
+
+CourseDetailsAPIRoute
+1. GET request:
+   a. Extract course ID from request parameters
+   b. Fetch course details using API
+   c. Return course data or error
+
+   Using Supabase :-
+
+   DatabaseMigration
+1. Create profiles table:
+   a. Store user profile information
+   b. Link to Supabase auth.users
+
+2. Create courses table:
+   a. Store course information
+
+3. Create videos table:
+   a. Store video information for each course
+
+4. Create video_progress table:
+   a. Track user progress for each video
+   b. Store watched intervals as JSONB
+
+5. Enable Row Level Security (RLS) on all tables
+
+6. Define policies for authenticated users:
+   a. Profiles:
+      i. Users can view and update their own profile
+   b. Courses:
+      i. Anyone can view courses
+   c. Videos:
+      i. Anyone can view videos
+   d. Video progress:
+      i. Users can view, update, and insert their own progress
