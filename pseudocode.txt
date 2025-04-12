@@ -1,0 +1,133 @@
+VideoLibraryPage
+1. Display a list of hardcoded JavaScript playlists
+2. For each playlist:
+   a. Show playlist title, description, and thumbnail
+   b. Provide a link to view the playlist details
+3. Navigation:
+   a. Back to dashboard
+
+   PlaylistPage(playlistId)
+1. Find the playlist by playlistId
+2. If playlist is found:
+   a. Display playlist title and description
+   b. List all videos in the playlist
+      i. Show video title and duration
+      ii. Provide a link to watch the video
+3. Navigation:
+   a. Back to video library
+
+
+   VideoPage(playlistId, videoId)
+1. Find the playlist and video by their IDs
+2. If video is found:
+   a. Display video title and playlist title
+   b. Render EnhancedVideoPlayer with video details
+3. Navigation:
+   a. Back to playlist
+
+
+VideoPlayer(videoId, url, duration)
+1. Initialize state:
+   a. progress: tracks video progress
+   b. isPlaying: tracks if video is playing
+   c. isBuffering: tracks buffering state
+   d. lastPositionRef: tracks last watched position
+   e. watchedIntervalsRef: array of watched time intervals
+
+2. On component mount:
+   a. Load saved progress from localStorage
+
+3. When video plays:
+   a. Set isPlaying to true
+   b. Start interval to update UI
+
+4. When video pauses:
+   a. Set isPlaying to false
+   b. Clear update interval
+
+5. On video progress update:
+   a. If video is playing:
+      i. Get current position in seconds
+      ii. If position changed:
+         - Create new interval (lastPosition → currentPosition)
+         - Add to watched intervals if continuous
+         - Save updated progress
+         - Update last position reference
+
+6. When user seeks:
+   a. Update last position reference
+
+7. When saving progress:
+   a. Merge overlapping intervals
+   b. Calculate total watched seconds
+   c. Calculate progress percentage
+   d. Create updated progress object
+   e. Save to localStorage
+   f. Update state and references
+
+8. Interval merging algorithm:
+   a. Sort intervals by start time
+   b. Initialize result with first interval
+   c. For each remaining interval:
+      i. If current interval overlaps with next:
+         - Merge them
+      ii. Else:
+         - Add current to result
+         - Move to next interval
+   d. Add final interval to result
+   e. Return merged intervals
+
+9. Render:
+   a. Video player component
+   b. Loading indicator during buffering
+   c. Progress display with watched time and progress bar
+
+Backend API Design:-
+1. /api/video-library
+   - GET: Return all available playlists
+
+2. /api/playlists/:playlistId
+   - GET: Return details for a specific playlist
+
+3. /api/videos/:videoId
+   - GET: Return details for a specific video
+
+4. /api/progress
+   - GET: Get user's progress for all videos
+   - GET /:videoId: Get progress for specific video
+   - POST /:videoId: Update progress for a video
+     a. Request body:
+        - watchedIntervals: array of {start, end}
+        - totalWatchedSeconds: number
+        - progressPercentage: number
+     b. Response: Updated progress object
+
+5. /api/analytics
+   - GET: Get learning statistics for the user
+
+   Users
+- id: primary key
+- email: string
+- name: string
+
+Playlists
+- id: primary key
+- title: string
+- description: string
+- thumbnailUrl: string
+
+Videos
+- id: primary key
+- playlistId: foreign key
+- title: string
+- url: string
+- duration: number
+
+Progress
+- id: primary key
+- userId: foreign key
+- videoId: foreign key
+- watchedIntervals: JSON array of {start, end}
+- totalWatchedSeconds: number
+- progressPercentage: number
+- lastUpdated: timestamp
