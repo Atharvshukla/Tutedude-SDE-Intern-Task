@@ -1,8 +1,9 @@
 'use client';
 
-import { MoonIcon, SunIcon } from 'lucide-react';
+import { MoonIcon, SunIcon, BarChart3 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
@@ -10,6 +11,9 @@ export function Navbar() {
   return (
     <nav className="border-b">
       <div className="container flex h-16 items-center px-4">
+        <Link href="/" className="font-semibold text-lg">
+          TuteDude
+        </Link>
         <div className="ml-auto flex items-center space-x-4">
           <Button
             variant="ghost"
