@@ -12,6 +12,10 @@ Traditional video players mark a lecture as “watched” just because it reache
 - 💾 Progress is saved and restored across sessions  
 
 ---
+## Demo Video
+[Demo Video](https://drive.google.com/file/d/17z-dMjo_EngKZoIkUd7hYrjUoIL0zsoi/view?usp=sharing).
+
+## [Detailed Documentation](https://docs.google.com/document/d/18U6raCaOijd1Y2Npq6Z0Azpq-srdSEeAKMZLy8WzTiY/edit?usp=sharing).
 <h3>📋 ScreenShots</h3>
 
 <table>
@@ -20,7 +24,7 @@ Traditional video players mark a lecture as “watched” just because it reache
     <td><strong>Login Page</strong></td>
   </tr>
   <tr>
-    <td><img src="" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/aac6ae4d-cdaf-431f-adeb-4fa01e12f2aa" width="250"/></td>
     <td><img src="https://github.com/user-attachments/assets/16ca2d33-7ff9-4d83-9b1d-3a77765f8224" width="250"/></td>
   </tr>
   <tr>
@@ -39,8 +43,7 @@ Traditional video players mark a lecture as “watched” just because it reache
   <tr>
     <td><img src="https://github.com/user-attachments/assets/ad4f6d62-a91f-4771-ba6e-4dac9a1536ea"
  width="250"/></td>
- <td><img src="![image](https://github.com/user-attachments/assets/0d9e00fe-4ad4-4da2-bb7f-6343d7bbb7b1)
-"
+ <td><img src="https://github.com/user-attachments/assets/0d9e00fe-4ad4-4da2-bb7f-6343d7bbb7b1"
  width="250"/></td>
   </tr>
 </table>
@@ -63,18 +66,7 @@ Traditional video players mark a lecture as “watched” just because it reache
     <td><img src="https://github.com/user-attachments/assets/514161f5-ffbc-4092-9e93-6b4e243f54fe" width="250"/></td>
     <td><img src="https://github.com/user-attachments/assets/36eb0311-9d49-4bf4-bd20-4aab1a0c8d17" width="250"/></td>
   </tr>
-  <tr>
-    <td><strong>VIdeoPlayer</strong></td>
-     <td><strong>Add New Courses</strong></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td><img src="https://github.com/user-attachments/assets/ad4f6d62-a91f-4771-ba6e-4dac9a1536ea"
- width="250"/></td>
- <td><img src="![image](https://github.com/user-attachments/assets/0d9e00fe-4ad4-4da2-bb7f-6343d7bbb7b1)
-"
- width="250"/></td>
-  </tr>
+
 </table>
 
 
@@ -99,6 +91,12 @@ Traditional video players mark a lecture as “watched” just because it reache
 - Syncs progress to Supabase if user is logged in, otherwise uses localStorage.
 - Handles buffering, playing, pausing, and seeking with intelligent tracking.
 - Merges intervals and calculates progress dynamically.
+
+## 🆕 Additional Features
+
+An extra feature implemented beyond the original assignment requirements is a **progress analytics dashboard** for each user. This dashboard analyzes user engagement based on the videos they've watched. Three demo courses have been created, each containing two videos, with user progress tracked individually in a responsive and analytical way.
+
+Additionally, a feature to **add new courses** has been introduced. Users can search for a course on YouTube and, by providing the **YouTube Playlist ID**, a script converts the playlist into a new course within the app. A corresponding schema is set up in **Supabase**, allowing these new courses to be tracked and analyzed for user progress just like the predefined ones.
 
 ---
 
@@ -139,30 +137,91 @@ Traditional video players mark a lecture as “watched” just because it reache
 ## 🧑‍💻 Project Structure
 
 ```bash
-📁 client/
- ┣ 📂 pages/
- ┃ ┣ HomePage.jsx
- ┃ ┣ DashboardPage.jsx
- ┃ ┣ VideoLibraryPage.jsx
- ┃ ┣ PlaylistPage.jsx
- ┃ ┣ VideoPage.jsx
- ┃ ┗ AnalyticsPage.jsx
- ┣ 📂 components/
- ┃ ┗ EnhancedVideoPlayer.jsx
- ┣ 📂 utils/
- ┃ ┗ supabaseClient.js
- ┣ 📂 services/
- ┃ ┗ api.js
- ┗ App.jsx
-📁 server/
- ┗ 📂 routes/
-   ┣ playlists.js
-   ┣ videos.js
-   ┣ progress.js
-   ┣ analytics.js
-   ┗ youtube.js
-📁 supabase/
- ┗ init.sql (RLS + Tables setup)
+├── README.md
+├── app
+│   ├── analytics
+│   │   └── page.tsx
+│   ├── api
+│   │   └── youtube
+│   │       └── route.ts
+│   ├── auth
+│   │   └── callback
+│   │       └── route.ts
+│   ├── dashboard
+│   │   └── page.tsx
+│   ├── globals.css
+│   ├── layout.tsx
+│   ├── login
+│   │   └── page.tsx
+│   ├── page.tsx
+│   └── video-library
+│       ├── [playlistId]
+│       │   ├── [videoId]
+│       │   │   └── page.tsx
+│       │   └── page.tsx
+│       └── page.tsx
+├── components
+│   ├── EnhancedVideoPlayer.tsx
+│   ├── SignOutButton.tsx
+│   ├── VideoPlayer.tsx
+│   ├── navbar.tsx
+│   ├── theme-provider.tsx
+│   └── ui
+│       ├── accordion.tsx
+│       ├── alert-dialog.tsx
+│       ├── alert.tsx
+│       ├── aspect-ratio.tsx
+│       ├── avatar.tsx
+│       ├── badge.tsx
+│       ├── breadcrumb.tsx
+│       ├── button.tsx
+│       ├── calendar.tsx
+│       ├── card.tsx
+│       ├── carousel.tsx
+│       ├── chart.tsx
+│       ├── checkbox.tsx
+│       ├── collapsible.tsx
+│       ├── context-menu.tsx
+│       ├── dialog.tsx
+│       ├── drawer.tsx
+│       ├── dropdown-menu.tsx
+│       ├── form.tsx
+│       ├── hover-card.tsx
+│       ├── input-otp.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       ├── menubar.tsx
+│       ├── navigation-menu.tsx
+│       ├── pagination.tsx
+│       ├── popover.tsx
+│       ├── progress.tsx
+│       ├── radio-group.tsx
+│       ├── resizable.tsx
+│       ├── scroll-area.tsx
+│       ├── select.tsx 
+├── components.json
+├── eslint.config.mjs
+├── hooks
+│   └── use-toast.ts
+├── lib
+│   ├── api.ts
+│   ├── auth.tsx
+│   ├── supabase.ts
+│   ├── types.ts
+│   └── utils.ts
+├── middleware.ts
+├── next-env.d.ts
+├── next.config.js
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── postcss.config.mjs
+├── pseudocode.txt
+├── supabase
+│   └── migrations
+├── tailwind.config.ts
+├── tsconfig.json
+└── vercel.json
 ```
 ---
 
