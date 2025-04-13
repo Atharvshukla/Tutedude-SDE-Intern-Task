@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Clock, CheckCircle2, BookOpen } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -123,6 +125,7 @@ interface PlaylistProgress {
 }
 
 export default function AnalyticsPage() {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [playlistsProgress, setPlaylistsProgress] = useState<PlaylistProgress[]>([]);
   const [overallProgress, setOverallProgress] = useState(0);
@@ -130,11 +133,146 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    // Load progress data from localStorage
-    loadProgressData();
-  }, []);
+    if (user) {
+      loadProgressFromSupabase();
+    } else {
+      // Fallback to localStorage if user is not authenticated
+      loadProgressFromLocalStorage();
+    }
+  }, [user]);
 
-  const loadProgressData = () => {
+  const loadProgressFromSupabase = async () => {
+    try {
+      if (!user) return;
+      
+      setIsLoading(true);
+      
+      // Get all videos from the database
+      const { data: videos, error: videosError } = await supabase
+        .from('videos')
+        .select('id, title, video_url, duration');
+      
+      if (videosError) {
+        console.error('Error loading videos:', videosError);
+        return;
+      }
+      
+      // Get all progress records for the current user
+      const { data: progressRecords, error: progressError } = await supabase
+        .from('video_progress')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (progressError) {
+        console.error('Error loading progress:', progressError);
+        return;
+      }
+      
+      // Create a map of video URLs to their database IDs and progress
+      const videoProgressMap = new Map();
+      
+      videos.forEach(video => {
+        const progress = progressRecords.find(p => p.video_id === video.id);
+        
+        if (progress) {
+          videoProgressMap.set(video.video_url, {
+            totalWatchedSeconds: progress.total_watched_seconds,
+            progressPercentage: progress.progress_percentage
+          });
+        }
+      });
+      
+      // Process playlists with the progress data
+      const progressData: PlaylistProgress[] = [];
+      let totalWatchedSeconds = 0;
+      let totalDurationSeconds = 0;
+      
+      jsPlaylists.forEach(playlist => {
+        const playlistProgress: PlaylistProgress = {
+          id: playlist.id,
+          title: playlist.title,
+          totalVideos: playlist.videos.length,
+          completedVideos: 0,
+          totalDuration: 0,
+          watchedDuration: 0,
+          overallProgress: 0,
+          videos: []
+        };
+        
+        playlist.videos.forEach(video => {
+          playlistProgress.totalDuration += video.duration;
+          totalDurationSeconds += video.duration;
+          
+          let videoProgress = 0;
+          let watchedSeconds = 0;
+          
+          // Get progress from the map
+          const progressInfo = videoProgressMap.get(video.url);
+          
+          if (progressInfo) {
+            videoProgress = progressInfo.progressPercentage;
+            watchedSeconds = progressInfo.totalWatchedSeconds;
+            
+            // Update completed videos count
+            if (videoProgress >= 90) {
+              playlistProgress.completedVideos++;
+            }
+          } else {
+            // Check localStorage as fallback
+            const savedProgress = localStorage.getItem(`video-progress-${video.id}`);
+            
+            if (savedProgress) {
+              const parsedProgress = JSON.parse(savedProgress) as VideoProgress;
+              videoProgress = parsedProgress.progressPercentage;
+              watchedSeconds = parsedProgress.totalWatchedSeconds;
+              
+              if (videoProgress >= 90) {
+                playlistProgress.completedVideos++;
+              }
+            }
+          }
+          
+          // Add to total watched time
+          playlistProgress.watchedDuration += watchedSeconds;
+          totalWatchedSeconds += watchedSeconds;
+          
+          // Add video progress data
+          playlistProgress.videos.push({
+            id: video.id,
+            title: video.title,
+            duration: video.duration,
+            progress: videoProgress,
+            watchedSeconds: watchedSeconds
+          });
+        });
+        
+        // Calculate overall progress for the playlist
+        playlistProgress.overallProgress = 
+          playlistProgress.totalDuration > 0 
+            ? (playlistProgress.watchedDuration / playlistProgress.totalDuration) * 100 
+            : 0;
+        
+        progressData.push(playlistProgress);
+      });
+      
+      // Calculate overall progress across all playlists
+      const overallProgressPercentage = 
+        totalDurationSeconds > 0 
+          ? (totalWatchedSeconds / totalDurationSeconds) * 100 
+          : 0;
+      
+      setPlaylistsProgress(progressData);
+      setOverallProgress(overallProgressPercentage);
+      setTotalWatchTime(totalWatchedSeconds);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error loading progress from Supabase:', error);
+      // Fallback to localStorage
+      loadProgressFromLocalStorage();
+    }
+  };
+
+  const loadProgressFromLocalStorage = () => {
     try {
       const progressData: PlaylistProgress[] = [];
       let totalWatchedSeconds = 0;
