@@ -3,7 +3,8 @@ import ReactPlayer from 'react-player';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-
+import { supabase } from '@/lib/supabase';
+import { useAuth } from  '@/lib/auth';
 interface EnhancedVideoPlayerProps {
   videoId: string;
   url: string;
@@ -23,26 +24,127 @@ interface VideoProgress {
 }
 
 export default function EnhancedVideoPlayer({ videoId, url, duration }: EnhancedVideoPlayerProps) {
+  const { user } = useAuth(); // Get current user from auth context
   const [progress, setProgress] = useState<VideoProgress | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const lastPositionRef = useRef<number>(0);
   const watchIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const playerRef = useRef<ReactPlayer>(null);
   const watchedIntervalsRef = useRef<WatchedInterval[]>([]);
   
-  // Load progress from localStorage on component mount
+  // Load progress on component mount
   useEffect(() => {
-    loadProgress();
+    if (user) {
+      loadProgressFromSupabase();
+    } else {
+      // Fallback to localStorage if user is not authenticated
+      loadProgressFromLocalStorage();
+    }
     
     return () => {
       if (watchIntervalRef.current) {
         clearInterval(watchIntervalRef.current);
       }
     };
-  }, [videoId]);
+  }, [videoId, user]);
 
-  const loadProgress = () => {
+  const loadProgressFromSupabase = async () => {
+    try {
+      if (!user) return;
+      
+      // First, check if we have a video record in the database
+      const { data: videoData, error: videoError } = await supabase
+        .from('videos')
+        .select('id')
+        .eq('video_url', url)
+        .single();
+      
+      if (videoError && videoError.code !== 'PGRST116') {
+        console.error('Error checking video:', videoError);
+        toast.error('Failed to load video data');
+        return;
+      }
+      
+      let dbVideoId;
+      
+      // If video doesn't exist in the database, create it
+      if (!videoData) {
+        const { data: newVideo, error: createError } = await supabase
+          .from('videos')
+          .insert({
+            title: 'Video ' + videoId, // You might want to pass a better title
+            video_url: url,
+            duration: duration,
+            course_id: null // You might want to associate with a course
+          })
+          .select('id')
+          .single();
+        
+        if (createError) {
+          console.error('Error creating video:', createError);
+          toast.error('Failed to create video record');
+          return;
+        }
+        
+        dbVideoId = newVideo.id;
+      } else {
+        dbVideoId = videoData.id;
+      }
+      
+      // Now get the progress for this video
+      const { data: progressData, error: progressError } = await supabase
+        .from('video_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('video_id', dbVideoId)
+        .single();
+      
+      if (progressError && progressError.code !== 'PGRST116') {
+        console.error('Error loading progress:', progressError);
+        toast.error('Failed to load video progress');
+        return;
+      }
+      
+      if (progressData) {
+        // Convert the progress data from the database to our format
+        const watchedIntervals = progressData.watched_intervals as WatchedInterval[];
+        
+        const videoProgress: VideoProgress = {
+          videoId,
+          watchedIntervals,
+          totalWatchedSeconds: progressData.total_watched_seconds,
+          progressPercentage: progressData.progress_percentage
+        };
+        
+        setProgress(videoProgress);
+        watchedIntervalsRef.current = watchedIntervals;
+        
+        // Set the player to the last position
+        const lastPosition = progressData.last_position || 0;
+        lastPositionRef.current = lastPosition;
+        console.log('Loaded last position from Supabase:', lastPosition);
+      } else {
+        // Initialize new progress
+        const newProgress: VideoProgress = {
+          videoId,
+          watchedIntervals: [],
+          totalWatchedSeconds: 0,
+          progressPercentage: 0
+        };
+        setProgress(newProgress);
+        watchedIntervalsRef.current = [];
+      }
+    } catch (error) {
+      console.error('Error loading progress from Supabase:', error);
+      toast.error('Failed to load video progress');
+      // Fallback to localStorage
+      loadProgressFromLocalStorage();
+    }
+  };
+
+  const loadProgressFromLocalStorage = () => {
     try {
       const savedProgress = localStorage.getItem(`video-progress-${videoId}`);
       if (savedProgress) {
@@ -67,12 +169,12 @@ export default function EnhancedVideoPlayer({ videoId, url, duration }: Enhanced
         watchedIntervalsRef.current = [];
       }
     } catch (error) {
-      console.error('Error loading progress:', error);
+      console.error('Error loading progress from localStorage:', error);
       toast.error('Failed to load video progress');
     }
   };
 
-  const saveProgress = (updatedIntervals: WatchedInterval[]) => {
+  const saveProgress = async (updatedIntervals: WatchedInterval[]) => {
     try {
       // Merge overlapping intervals
       const mergedIntervals = mergeIntervals(updatedIntervals);
@@ -93,15 +195,94 @@ export default function EnhancedVideoPlayer({ videoId, url, duration }: Enhanced
         progressPercentage: Math.min(progressPercentage, 100) // Cap at 100%
       };
       
-      // Save to localStorage
-      localStorage.setItem(`video-progress-${videoId}`, JSON.stringify(updatedProgress));
-      
       // Update state
       setProgress(updatedProgress);
       watchedIntervalsRef.current = mergedIntervals;
+      
+      // Save to localStorage as fallback
+      localStorage.setItem(`video-progress-${videoId}`, JSON.stringify(updatedProgress));
+      
+      // If user is authenticated, save to Supabase
+      if (user) {
+        await saveProgressToSupabase(mergedIntervals, totalWatchedSeconds, progressPercentage);
+      }
     } catch (error) {
       console.error('Error saving progress:', error);
       toast.error('Failed to save video progress');
+    }
+  };
+
+  const saveProgressToSupabase = async (
+    watchedIntervals: WatchedInterval[],
+    totalWatchedSeconds: number,
+    progressPercentage: number
+  ) => {
+    try {
+      if (!user || isSaving) return;
+      
+      setIsSaving(true);
+      
+      // First, get the video ID from the database
+      const { data: videoData, error: videoError } = await supabase
+        .from('videos')
+        .select('id')
+        .eq('video_url', url)
+        .single();
+      
+      if (videoError) {
+        console.error('Error getting video ID:', videoError);
+        return;
+      }
+      
+      const videoId = videoData.id;
+      
+      // Check if progress record exists
+      const { data: existingProgress, error: checkError } = await supabase
+        .from('video_progress')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('video_id', videoId)
+        .single();
+      
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking progress:', checkError);
+        return;
+      }
+      
+      const progressData = {
+        user_id: user.id,
+        video_id: videoId,
+        watched_intervals: watchedIntervals,
+        total_watched_seconds: totalWatchedSeconds,
+        progress_percentage: progressPercentage,
+        last_position: lastPositionRef.current,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (existingProgress) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('video_progress')
+          .update(progressData)
+          .eq('id', existingProgress.id);
+        
+        if (updateError) {
+          console.error('Error updating progress:', updateError);
+        }
+      } else {
+        // Insert new record
+        const { error: insertError } = await supabase
+          .from('video_progress')
+          .insert(progressData);
+        
+        if (insertError) {
+          console.error('Error inserting progress:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving to Supabase:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -193,7 +374,14 @@ export default function EnhancedVideoPlayer({ videoId, url, duration }: Enhanced
   const handleReady = () => {
     // When player is ready, seek to the last position if available
     if (playerRef.current && lastPositionRef.current > 0) {
-      playerRef.current.seekTo(lastPositionRef.current, 'seconds');
+      console.log('Seeking to position:', lastPositionRef.current);
+      // Add a small delay to ensure the player is fully initialized
+      setTimeout(() => {
+        if (playerRef.current) {
+          playerRef.current.seekTo(lastPositionRef.current, 'seconds');
+          toast.info(`Resuming from ${formatTime(lastPositionRef.current)}`);
+        }
+      }, 500);
     }
   };
 
