@@ -3,7 +3,6 @@ import ReactPlayer from 'react-player';
 import { Progress } from '@/components/ui/progress';
 import { updateVideoProgress, getVideoProgress } from '@/lib/api';
 import { WatchedInterval, VideoProgress } from '@/lib/types';
-import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface VideoPlayerProps {
