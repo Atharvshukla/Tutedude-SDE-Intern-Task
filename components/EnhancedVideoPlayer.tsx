@@ -4,7 +4,8 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from  '@/lib/auth';
+import { useAuth } from '@/lib/auth'; // Assuming you have an auth context
+
 interface EnhancedVideoPlayerProps {
   videoId: string;
   url: string;
@@ -122,9 +123,7 @@ export default function EnhancedVideoPlayer({ videoId, url, duration }: Enhanced
         watchedIntervalsRef.current = watchedIntervals;
         
         // Set the player to the last position
-        const lastPosition = progressData.last_position || 0;
-        lastPositionRef.current = lastPosition;
-        console.log('Loaded last position from Supabase:', lastPosition);
+        lastPositionRef.current = progressData.last_position || 0;
       } else {
         // Initialize new progress
         const newProgress: VideoProgress = {

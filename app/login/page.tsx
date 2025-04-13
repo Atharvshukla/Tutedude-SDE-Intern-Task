@@ -24,7 +24,7 @@ export default function AuthPage() {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        router.push('/dashboard');
+        router.push('/video-library');
         router.refresh();
       }
     };
@@ -65,7 +65,7 @@ export default function AuthPage() {
         if (error) throw error;
 
         if (data.session) {
-          router.push('/dashboard');
+          router.push('/video-library');
           router.refresh();
         }
       }

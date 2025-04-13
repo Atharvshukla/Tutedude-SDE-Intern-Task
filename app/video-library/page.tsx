@@ -1,10 +1,12 @@
 'use client';
-
+import React from 'react';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, BarChart3 } from 'lucide-react';
+import { ArrowLeft, PlusCircle, BarChart2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import SignOutButton from "@/components/SignOutButton";
 
 // Hardcoded JavaScript playlists
 const jsPlaylists = [
@@ -71,25 +73,46 @@ const jsPlaylists = [
 ];
 
 export default function VideoLibraryPage() {
+  const router = useRouter();
+  
+  const navigateToDashboard = () => {
+    router.push('/dashboard');
+  };
+  
+  const navigateToAnalytics = () => {
+    router.push('/analytics');
+  };
+  
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
+            {/* <Link href="/dashboard">
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-            </Link>
+            </Link> */}
             <h1 className="text-2xl font-bold">JavaScript Video Library</h1>
           </div>
-          
-          <Link href="/analytics">
-            <Button variant="outline" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span>View Analytics</span>
+          <div className="flex gap-4">
+            <Button 
+              onClick={navigateToDashboard}
+              className="flex items-center gap-2"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Add New Courses
             </Button>
-          </Link>
+            <Button 
+              onClick={navigateToAnalytics}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <BarChart2 className="h-4 w-4" />
+              View Analytics
+            </Button>
+            <SignOutButton />
+          </div>
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
