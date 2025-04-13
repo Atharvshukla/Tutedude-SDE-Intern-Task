@@ -57,9 +57,9 @@ export async function POST(request: Request) {
       id: [playlistId],
     });
 
-    if (!playlist?.data?.items?.[0]) {
-      console.log('Playlist not found');
-      return NextResponse.json({ error: 'Playlist not found' }, { status: 404 });
+    if (!playlist?.data?.items?.[0]?.snippet) {
+      console.log('Playlist or snippet not found');
+      return NextResponse.json({ error: 'Playlist information incomplete' }, { status: 404 });
     }
 
     const playlistSnippet = playlist.data.items[0].snippet;
