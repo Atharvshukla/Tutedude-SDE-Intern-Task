@@ -6,7 +6,7 @@ export async function searchYouTubePlaylists(query: string): Promise<ApiResponse
   try {
     const response = await fetch(`/api/youtube?query=${encodeURIComponent(query)}`);
     const data = await response.json();
-    return data;x
+    return data;
   } catch (error) {
     console.error('Error searching playlists:', error);
     return { error: 'Failed to fetch YouTube playlists' };

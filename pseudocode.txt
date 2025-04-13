@@ -1,4 +1,4 @@
-VideoLibraryPage
+🔸 1.VideoLibraryPage
 1. Display a list of hardcoded JavaScript playlists
 2. For each playlist:
    a. Show playlist title, description, and thumbnail
@@ -26,61 +26,151 @@ VideoLibraryPage
    a. Back to playlist
 
 
-VideoPlayer(videoId, url, duration)
+🔸 EnhancedVideoPlayer(videoId, url, duration)
 1. Initialize state:
    a. progress: tracks video progress
    b. isPlaying: tracks if video is playing
    c. isBuffering: tracks buffering state
-   d. lastPositionRef: tracks last watched position
-   e. watchedIntervalsRef: array of watched time intervals
+   d. isSaving: tracks if progress is being saved
+   e. lastPositionRef: tracks last watched position
+   f. watchedIntervalsRef: array of watched time intervals
 
 2. On component mount:
-   a. Load saved progress from localStorage
+   a. If user is authenticated:
+      i. Load progress from Supabase database
+   b. Else:
+      i. Load progress from localStorage
+   c. Set up cleanup for unmount
 
-3. When video plays:
+3. When loading progress from Supabase:
+   a. Check if video exists in database by URL
+   b. If video doesn't exist, create new video record
+   c. Get video ID from database
+   d. Fetch progress for this video and user
+   e. If progress exists:
+      i. Convert database format to component format
+      ii. Set progress state and refs
+   f. Else:
+      i. Initialize new progress object
+   g. Handle errors by falling back to localStorage
+
+4. When loading progress from localStorage:
+   a. Get saved progress from localStorage
+   b. If progress exists:
+      i. Parse and set progress state
+      ii. Set watched intervals ref
+      iii. Set last position to furthest watched point
+   c. Else:
+      i. Initialize new progress object
+   d. Handle errors with toast notifications
+
+5. When video plays:
    a. Set isPlaying to true
    b. Start interval to update UI
 
-4. When video pauses:
+6. When video pauses:
    a. Set isPlaying to false
    b. Clear update interval
 
-5. On video progress update:
+7. On video progress update:
    a. If video is playing:
       i. Get current position in seconds
       ii. If position changed:
          - Create new interval (lastPosition → currentPosition)
-         - Add to watched intervals if continuous
+         - Add to intervals if forward progress (not skipping)
          - Save updated progress
          - Update last position reference
 
-6. When user seeks:
+8. When user seeks:
    a. Update last position reference
 
-7. When saving progress:
+9. When saving progress:
    a. Merge overlapping intervals
    b. Calculate total watched seconds
    c. Calculate progress percentage
    d. Create updated progress object
-   e. Save to localStorage
-   f. Update state and references
+   e. Save to localStorage as fallback
+   f. If user is authenticated, save to Supabase
+   g. Update state and references
 
-8. Interval merging algorithm:
-   a. Sort intervals by start time
-   b. Initialize result with first interval
-   c. For each remaining interval:
-      i. If current interval overlaps with next:
-         - Merge them
-      ii. Else:
-         - Add current to result
-         - Move to next interval
-   d. Add final interval to result
-   e. Return merged intervals
+10. When saving to Supabase:
+    a. Get video ID from database
+    b. Check if progress record exists
+    c. If exists, update existing record
+    d. Else, insert new record
+    e. Handle errors appropriately
 
-9. Render:
-   a. Video player component
-   b. Loading indicator during buffering
-   c. Progress display with watched time and progress bar
+11. Interval merging algorithm:
+    a. Sort intervals by start time
+    b. Initialize result with first interval
+    c. For each remaining interval:
+       i. If current interval overlaps with next:
+          - Merge them
+       ii. Else:
+          - Add current to result
+          - Move to next interval
+    d. Add final interval to result
+    e. Return merged intervals
+
+12. Render:
+    a. Video player component with event handlers
+    b. Buffering overlay when needed
+    c. Progress display with watched time and progress bar
+
+🔸 AnalyticsPage
+1. Initialize state:
+   a. playlistsProgress: array of playlist progress data
+   b. overallProgress: overall progress percentage
+   c. totalWatchTime: total seconds watched
+   d. isLoading: loading state
+
+2. On component mount:
+   a. If user is authenticated:
+      i. Load progress from Supabase database
+   b. Else:
+      i. Load progress from localStorage
+
+3. When loading progress from Supabase:
+   a. Fetch all videos from database
+   b. Fetch all progress records for current user
+   c. Create a map of video URLs to their database IDs and progress
+   d. Initialize progress data array and tracking variables
+   e. For each playlist:
+      i. Initialize playlist progress object
+      ii. For each video in playlist:
+          - Add video duration to playlist total duration
+          - Add video duration to total duration across all playlists
+          - Find progress for this video in the database
+          - If progress exists:
+             * Calculate video progress percentage
+             * Add watched seconds to playlist watched duration
+             * Add watched seconds to total watched seconds
+             * If video progress >= 90%, increment completed videos count
+          - Add video progress data to playlist's videos array
+      iii. Calculate overall progress for the playlist
+      iv. Add playlist progress to progress data array
+   f. Calculate overall progress across all playlists
+   g. Update state with calculated data
+   h. Handle errors by falling back to localStorage
+
+4. When loading progress from localStorage:
+   a. Similar to loading from Supabase but reads from localStorage
+   b. Process each playlist and video to calculate progress metrics
+   c. Update state with calculated data
+
+5. Helper functions:
+   a. formatTime: convert seconds to human-readable format
+   b. prepareBarChartData: format data for playlist progress bar chart
+   c. prepareDoughnutData: format data for completed vs in-progress videos
+   d. prepareLineChartData: format data for video progress line chart
+   e. prepareRadarData: format data for skills radar chart
+
+6. Render:
+   a. If loading, show loading spinner
+   b. Else, display analytics dashboard with:
+      i. Overview cards (overall progress, watch time, completed videos)
+      ii. Tabs for different chart views
+      iii. Charts based on the prepared data
 
 Backend API Design:-
 1. /api/video-library
