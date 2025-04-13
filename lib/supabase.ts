@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -46,3 +45,4 @@ export const calculateTotalWatchedTime = (intervals: WatchedInterval[]): number 
   const merged = mergeIntervals(intervals);
   return merged.reduce((total, interval) => total + (interval.end - interval.start), 0);
 };
+//add istrings in .env file 
